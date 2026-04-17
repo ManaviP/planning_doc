@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+supabase
+python-dotenv
+kubernetes
+prometheus-api-client
+scikit-learn
+joblib
+transformers
+pyyaml
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.10.0+cpu
+requests
