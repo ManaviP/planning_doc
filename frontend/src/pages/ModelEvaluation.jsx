@@ -6,8 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { apiUrl } from '../config/api';
 const REQUEST_TIMEOUT_MS = 8000;
 
 export default function ModelEvaluation() {
@@ -29,7 +28,7 @@ export default function ModelEvaluation() {
       setLoading(true);
       setError('');
       try {
-        const evalResp = await fetch(`${API_BASE_URL}/results/${id}/evaluation`, {
+        const evalResp = await fetch(apiUrl(`/results/${id}/evaluation`), {
           signal: controller.signal,
         });
 
@@ -48,7 +47,7 @@ export default function ModelEvaluation() {
         setEvaluation(evalJson);
 
         try {
-          const simResp = await fetch(`${API_BASE_URL}/results/${id}/simulation?iterations=${iterations}`, {
+          const simResp = await fetch(apiUrl(`/results/${id}/simulation?iterations=${iterations}`), {
             signal: controller.signal,
           });
           if (simResp.ok) {

@@ -10,9 +10,8 @@ import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
 import SkeletonBlock from '../components/ui/SkeletonBlock';
 import StatusBadge from '../components/ui/StatusBadge';
+import { apiUrl } from '../config/api';
 import { useWorkloadContext } from '../context/WorkloadContext';
-
-const API_BASE_URL = 'http://localhost:8000';
 const REQUEST_TIMEOUT_MS = 20000;
 
 const DEFAULT_WEIGHTS = {
@@ -26,7 +25,7 @@ async function fetchDecisionData(workloadId) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${API_BASE_URL}/results/${workloadId}/decision-panel`, {
+    const response = await fetch(apiUrl(`/results/${workloadId}/decision-panel`), {
       signal: controller.signal,
     });
     if (!response.ok) throw new Error(`Failed to fetch decision data (${response.status})`);
@@ -45,7 +44,7 @@ async function fetchLatestWorkloadId() {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${API_BASE_URL}/workloads`, { signal: controller.signal });
+    const response = await fetch(apiUrl('/workloads'), { signal: controller.signal });
     if (!response.ok) return null;
     const rows = await response.json();
     if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -182,7 +181,7 @@ export default function AIDecisionPanel() {
     const fetchSimulation = async () => {
       try {
         const res = await fetch(
-          `${API_BASE_URL}/results/${workloadId}/simulation?iterations=300`,
+          apiUrl(`/results/${workloadId}/simulation?iterations=300`),
           { signal: controller.signal },
         );
         if (res.ok) {
@@ -210,7 +209,7 @@ export default function AIDecisionPanel() {
     setDeployMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/workloads/${workloadId}/deploy`, {
+      const response = await fetch(apiUrl(`/workloads/${workloadId}/deploy`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target }),
@@ -242,7 +241,7 @@ export default function AIDecisionPanel() {
     setDeployingTarget('retry');
     setDeployMessage('');
     try {
-      const response = await fetch(`${API_BASE_URL}/workloads/${workloadId}/deploy/retry`, {
+      const response = await fetch(apiUrl(`/workloads/${workloadId}/deploy/retry`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target: deploymentStatus?.target || 'local' }),
@@ -269,7 +268,7 @@ export default function AIDecisionPanel() {
     setDeployingTarget('cancel');
     setDeployMessage('');
     try {
-      const response = await fetch(`${API_BASE_URL}/workloads/${workloadId}/deploy/cancel`, {
+      const response = await fetch(apiUrl(`/workloads/${workloadId}/deploy/cancel`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'Cancelled from decision panel.' }),
@@ -300,7 +299,7 @@ export default function AIDecisionPanel() {
 
     const pollStatus = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/workloads/${workloadId}/deploy/status`);
+        const response = await fetch(apiUrl(`/workloads/${workloadId}/deploy/status`));
         if (!response.ok) return;
         const payload = await response.json();
         if (!cancelled) {

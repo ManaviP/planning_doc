@@ -15,9 +15,8 @@ import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
 import StatusBadge from '../components/ui/StatusBadge';
+import { apiUrl } from '../config/api';
 import { useWorkloadContext } from '../context/WorkloadContext';
-
-const API_BASE_URL = 'http://localhost:8000';
 const RECENT_WORKLOADS_POLL_MS = 10000;
 
 const defaultWorkload = {
@@ -67,7 +66,7 @@ export default function WorkloadForm() {
 
   const refreshRecentWorkloads = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/workloads`);
+      const response = await fetch(apiUrl('/workloads'));
       if (!response.ok) {
         throw new Error(`Failed to fetch recent workloads (${response.status})`);
       }
@@ -168,7 +167,7 @@ export default function WorkloadForm() {
     setSubmitting(true);
     setGlobalError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/workloads`, {
+      const response = await fetch(apiUrl('/workloads'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(buildPayload(workloadA)),
@@ -198,7 +197,7 @@ export default function WorkloadForm() {
     setSubmitting(true);
     setGlobalError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/simulate/competition`, {
+      const response = await fetch(apiUrl('/simulate/competition'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

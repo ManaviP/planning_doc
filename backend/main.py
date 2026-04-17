@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,6 +23,21 @@ LOGGER = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env", override=False)
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    if origin.strip()
+]
+cors_origin_regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX", r"https://.*\.netlify\.app")
+if cors_origin_regex.strip() == "":
+    cors_origin_regex = None
+
 app = FastAPI(
     title="AI-Orchestrated Compute Allocation API",
     version="0.1.0",
@@ -31,7 +47,8 @@ app = FastAPI(
 # CORS middleware must be added FIRST before routers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
@@ -48,8 +65,6 @@ app.include_router(websocket_router)
 
 @app.on_event("startup")
 def on_startup() -> None:
-    load_dotenv(BASE_DIR / ".env")
-    load_dotenv(BASE_DIR.parent / ".env", override=False)
     start_metrics_collector()
     # Starts a daemon thread; safe even if training data is not yet available.
     start_retrainer()

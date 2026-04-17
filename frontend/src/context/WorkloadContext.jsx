@@ -1,8 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { apiUrl } from '../config/api';
 import { useWorkloadWS } from '../hooks/useWorkloadWS';
-
-const API_BASE_URL = 'http://localhost:8000';
 const POLL_INTERVAL_MS = 10000;
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -14,7 +13,7 @@ async function fetchDecisionBundle(workloadId) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${API_BASE_URL}/results/${workloadId}/decision-panel`, {
+    const response = await fetch(apiUrl(`/results/${workloadId}/decision-panel`), {
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -43,7 +42,7 @@ export function WorkloadProvider({ children }) {
 
   const refreshClusterNodes = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/metrics/nodes`);
+      const response = await fetch(apiUrl('/metrics/nodes'));
       if (!response.ok) throw new Error(`Metrics request failed: ${response.status}`);
       const data = await response.json();
       setClusterNodes(Array.isArray(data) ? data : []);

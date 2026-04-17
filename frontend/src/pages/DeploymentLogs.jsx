@@ -7,9 +7,8 @@ import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
 import StatusBadge from '../components/ui/StatusBadge';
+import { apiUrl } from '../config/api';
 import { useWorkloadContext } from '../context/WorkloadContext';
-
-const API_BASE_URL = 'http://localhost:8000';
 
 export default function DeploymentLogs() {
   const params = useParams();
@@ -33,7 +32,7 @@ export default function DeploymentLogs() {
 
     const loadHistorical = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/results/${workloadId}/logs?limit=500`);
+        const response = await fetch(apiUrl(`/results/${workloadId}/logs?limit=500`));
         if (!response.ok) {
           throw new Error(`Logs request failed: ${response.status}`);
         }

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Activity, Boxes, Cpu, Layers3, MemoryStick } from 'lucide-react';
 
 import { useWorkloadContext } from '../context/WorkloadContext';
+import { apiUrl } from '../config/api';
 import StatusBadge from './ui/StatusBadge';
 
 const REFRESH_INTERVAL_MS = 10000;
-const API_BASE_URL = 'http://localhost:8000';
 const REQUEST_TIMEOUT_MS = 8000;
 
 export default function ClusterStatusBar() {
@@ -19,7 +19,7 @@ export default function ClusterStatusBar() {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       try {
-        const response = await fetch(`${API_BASE_URL}/results/stats/active-workloads`, {
+        const response = await fetch(apiUrl('/results/stats/active-workloads'), {
           signal: controller.signal,
         });
         if (response.ok) {

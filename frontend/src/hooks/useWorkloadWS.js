@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-const WS_BASE_URL = 'ws://localhost:8000/ws';
+import { wsUrl } from '../config/api';
+
 const MAX_EVENTS = 200;
 const RECONNECT_DELAY_MS = 2000;
 
@@ -30,7 +31,7 @@ export function useWorkloadWS(workloadId) {
 
     const connect = () => {
       setStatus((current) => (current === 'connected' ? current : 'connecting'));
-      const socket = new WebSocket(`${WS_BASE_URL}/${workloadId}`);
+      const socket = new WebSocket(wsUrl(`/ws/${workloadId}`));
       socketRef.current = socket;
 
       socket.onopen = () => {

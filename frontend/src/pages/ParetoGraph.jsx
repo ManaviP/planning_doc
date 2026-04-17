@@ -6,9 +6,8 @@ import ParetoGraph from '../components/ParetoGraph';
 import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
+import { apiUrl } from '../config/api';
 import { useWorkloadContext } from '../context/WorkloadContext';
-
-const API_BASE_URL = 'http://localhost:8000';
 
 export default function ParetoGraphPage() {
   const params = useParams();
@@ -29,7 +28,7 @@ export default function ParetoGraphPage() {
     let mounted = true;
     const load = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/results/${workloadId}/decision-panel`);
+        const response = await fetch(apiUrl(`/results/${workloadId}/decision-panel`));
         if (!response.ok) {
           throw new Error(`Pareto data request failed: ${response.status}`);
         }

@@ -5,8 +5,7 @@ import { useLocation } from 'react-router-dom';
 import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
-
-const API_BASE_URL = 'http://localhost:8000';
+import { apiUrl } from '../config/api';
 
 const defaultPayload = {
   name: 'demo-preview',
@@ -71,7 +70,7 @@ export default function PreviewControlPlane() {
     setError('');
     setActualsStatus('');
     try {
-      const response = await fetch(`${API_BASE_URL}/preview/run`, {
+      const response = await fetch(apiUrl('/preview/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -97,7 +96,7 @@ export default function PreviewControlPlane() {
       predicted_failure_probability: winner.failure_probability,
     };
     try {
-      const response = await fetch(`${API_BASE_URL}/shadow/register`, {
+      const response = await fetch(apiUrl('/shadow/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -114,7 +113,7 @@ export default function PreviewControlPlane() {
   const loadTrust = async () => {
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/shadow/trust/summary`);
+      const response = await fetch(apiUrl('/shadow/trust/summary'));
       if (!response.ok) throw new Error(`Trust summary failed (${response.status})`);
       const data = await response.json();
       setTrust(data);
@@ -127,7 +126,7 @@ export default function PreviewControlPlane() {
     if (!run?.run_id) return;
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/preview/${run.run_id}/export`);
+      const response = await fetch(apiUrl(`/preview/${run.run_id}/export`));
       if (!response.ok) throw new Error(`Export failed (${response.status})`);
 
       const blob = await response.blob();
@@ -169,7 +168,7 @@ export default function PreviewControlPlane() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/shadow/${shadowId}/actuals`, {
+      const response = await fetch(apiUrl(`/shadow/${shadowId}/actuals`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
