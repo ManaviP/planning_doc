@@ -59,9 +59,9 @@ def run_monte_carlo(workload: WorkloadRequest, node: NodeMetrics, iterations: in
 
     for _ in range(n):
         sample = _perturbed(node)
-        latencies.append(float(predict_latency(workload, sample)))
-        failures.append(float(predict_failure_prob(workload, sample)))
-        demands.append(float(predict_resource_demand(workload, sample)))
+        latencies.append(float(predict_latency(workload, sample, use_dl=False)))
+        failures.append(float(predict_failure_prob(workload, sample, use_dl=False)))
+        demands.append(float(predict_resource_demand(workload, sample, use_dl=False)))
 
     sla_breach = sum(1 for x in latencies if x > workload.latency_sla_ms)
 

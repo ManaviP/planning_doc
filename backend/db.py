@@ -341,16 +341,33 @@ def verify_audit_chain(workload_id: str, limit: int = 200) -> dict[str, Any]:
     }
 
 
+import time
+
+_HISTORY_CACHE = {}
+_HISTORY_CACHE_TTL = 30  # Keep data cached for 30 seconds
+
 def get_metrics_history(limit: int = 500) -> list[dict[str, Any]]:
-    response = (
-        get_supabase()
-        .table("node_metrics_snapshots")
-        .select("*")
-        .order("collected_at", desc=True)
-        .limit(limit)
-        .execute()
-    )
-    return response.data or []
+    now = time.time()
+    cache_key = str(limit)
+
+    if cache_key in _HISTORY_CACHE and (now - _HISTORY_CACHE[cache_key]["time"]) < _HISTORY_CACHE_TTL:
+        return _HISTORY_CACHE[cache_key]["rows"]
+
+    try:
+        response = (
+            get_supabase()
+            .table("node_metrics_snapshots")
+            .select("*")
+            .order("collected_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = response.data or []
+    except Exception:
+        rows = []
+
+    _HISTORY_CACHE[cache_key] = {"time": now, "rows": rows}
+    return rows
 
 
 def save_deployment_state(

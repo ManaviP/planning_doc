@@ -15,8 +15,12 @@ function TopologyNode({ data }) {
   const risk = scenario ? Number(scenario.predicted_failure_prob) * 100 : null;
   return (
     <motion.div
-      className={`w-[280px] rounded-[28px] border bg-slate-950/90 p-5 text-sm text-slate-100 shadow-[0_24px_80px_rgba(2,6,23,0.42)] ${selected ? 'border-2 border-sky-500' : 'border-white/10'} ${animated ? 'puls-ring' : ''}`}
+      className={`w-[280px] rounded-[28px] bg-slate-950/90 p-5 text-sm text-slate-100 ${selected ? 'border-2 border-sky-500' : 'border border-white/10'} ${animated ? 'puls-ring' : ''}`}
       title={`CPU ${Number(metric.cpu_usage_pct).toFixed(1)}% | Memory ${Number(metric.memory_usage_pct).toFixed(1)}% | Risk ${risk == null ? '—' : `${risk.toFixed(1)}%`} | Latency ${scenario ? `${Number(scenario.predicted_latency_ms).toFixed(1)}ms` : '—'}`}
+      style={{
+          boxShadow: `0 0 30px ${color(metric.cpu_usage_pct)}33, inset 0 0 20px ${color(metric.cpu_usage_pct)}1A`,
+          borderColor: selected ? '#0ea5e9' : `${color(metric.cpu_usage_pct)}99`
+      }}
       whileHover={{ y: -4, rotateX: 2, rotateY: -2 }}
     >
       <Handle position={Position.Left} type="target" style={{ opacity: 0 }} />

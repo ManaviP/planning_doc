@@ -89,6 +89,25 @@ def _history_for_node(node_name: str, limit: int = 5000) -> list[dict]:
 
 
 def _dl_prediction(workload: WorkloadRequest, node: NodeMetrics):
+	try:
+		from backend.prediction.rf_model import load_rf_model, rf_infer
+		rf_model = load_rf_model()
+		if rf_model is not None:
+			history = _history_for_node(node.node_name)
+			if len(history) >= DL_WINDOW:
+				return rf_infer(
+					history_window=history,
+					workload_features={
+						"cpu_cores": workload.cpu_cores,
+						"memory_gb": workload.memory_gb,
+						"gpu_units": float(workload.gpu_units or 0.0),
+						"priority": workload.priority,
+					},
+					model=rf_model,
+				)
+	except ImportError:
+		pass
+
 	model = load_trained_model()
 	if model is None:
 		return None
@@ -166,16 +185,17 @@ def estimate_energy(workload: WorkloadRequest, node: NodeMetrics) -> float:
 	return round(kwh, 6)
 
 
-def predict_failure_prob(workload: WorkloadRequest, node: NodeMetrics) -> float:
+def predict_failure_prob(workload: WorkloadRequest, node: NodeMetrics, use_dl: bool = True) -> float:
 	"""Predict the probability that this deployment will fail or be evicted.
 
 	Driven by node pressure, pod contention, workload risk tolerance, priority,
 	and a stable per-node reliability score (some nodes are inherently less
 	stable due to hardware age, flaky network, etc.).
 	"""
-	dl = _dl_prediction(workload, node)
-	if dl is not None:
-		return round(min(max(dl.predicted_failure_probability, 0.01), 0.95), 4)
+	if use_dl:
+		dl = _dl_prediction(workload, node)
+		if dl is not None:
+			return round(min(max(dl.predicted_failure_probability, 0.01), 0.95), 4)
 
 	p = _pressure(node)
 	c = _pod_contention(node)
@@ -197,7 +217,7 @@ def predict_failure_prob(workload: WorkloadRequest, node: NodeMetrics) -> float:
 	return round(min(max(raw, 0.01), 0.95), 4)
 
 
-def predict_latency(workload: WorkloadRequest, node: NodeMetrics) -> float:
+def predict_latency(workload: WorkloadRequest, node: NodeMetrics, use_dl: bool = True) -> float:
 	"""Estimate p95 request latency (ms) for this workload on *node*.
 
 	Components:
@@ -208,9 +228,10 @@ def predict_latency(workload: WorkloadRequest, node: NodeMetrics) -> float:
 	- Workload size overhead
 	- Stable hardware latency characteristics (NIC speed, disk, NUMA, etc.)
 	"""
-	dl = _dl_prediction(workload, node)
-	if dl is not None:
-		return round(max(dl.predicted_latency_ms, 1.0), 3)
+	if use_dl:
+		dl = _dl_prediction(workload, node)
+		if dl is not None:
+			return round(max(dl.predicted_latency_ms, 1.0), 3)
 
 	cpu_ratio = node.cpu_usage_pct / 100.0
 	# Exponential queuing delay: gentle at low load, steep above 70 %
@@ -227,14 +248,15 @@ def predict_latency(workload: WorkloadRequest, node: NodeMetrics) -> float:
 	return round(_LATENCY_BASE_MS + queuing_ms + mem_ms + pod_ms + workload_ms + hw_ms, 3)
 
 
-def predict_resource_demand(workload: WorkloadRequest, node: NodeMetrics) -> float:
+def predict_resource_demand(workload: WorkloadRequest, node: NodeMetrics, use_dl: bool = True) -> float:
 	"""Predict normalized future resource demand for this workload/node.
 
 	Returns value in [0, 2], where 1 is nominal expected demand.
 	"""
-	dl = _dl_prediction(workload, node)
-	if dl is not None:
-		return round(min(max(dl.predicted_resource_demand, 0.0), 2.0), 4)
+	if use_dl:
+		dl = _dl_prediction(workload, node)
+		if dl is not None:
+			return round(min(max(dl.predicted_resource_demand, 0.0), 2.0), 4)
 
 	# Formula fallback proxy: workload demand + current node pressure.
 	base = (workload.cpu_cores / 4.0) + (workload.memory_gb / 8.0) + (float(workload.gpu_units or 0.0) * 0.3)

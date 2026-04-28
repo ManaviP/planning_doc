@@ -7,7 +7,7 @@ import Panel from '../components/ui/Panel';
 import Reveal from '../components/ui/Reveal';
 import SectionHeader from '../components/ui/SectionHeader';
 import { apiUrl } from '../config/api';
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 20000;
 
 export default function ModelEvaluation() {
   const { id } = useParams();
@@ -63,12 +63,19 @@ export default function ModelEvaluation() {
             setSimulation(null);
             setSimulationReason('Simulation request failed.');
           }
-        } catch {
-          setSimulation(null);
-          setSimulationReason('Simulation is temporarily unavailable.');
+        } catch (simErr) {
+          if (simErr?.name === 'AbortError') {
+             setSimulationReason('Simulation request timed out. Try refreshing.');
+          } else {
+             setSimulationReason('Simulation is temporarily unavailable.');
+          }
         }
       } catch (err) {
-        setError(err.message || 'Failed to load model evaluation');
+        if (err?.name === 'AbortError') {
+          setError('Evaluation request timed out. The operation was too slow or you refreshed. Please try again.');
+        } else {
+          setError(err.message || 'Failed to load model evaluation');
+        }
       } finally {
         setLoading(false);
       }
@@ -80,7 +87,8 @@ export default function ModelEvaluation() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [id, iterations, refreshKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, refreshKey]);
 
   const predVsActual = useMemo(() => {
     if (!evaluation) return [];

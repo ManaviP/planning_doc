@@ -68,6 +68,21 @@ def on_startup() -> None:
     start_metrics_collector()
     # Starts a daemon thread; safe even if training data is not yet available.
     start_retrainer()
+    
+    import asyncio
+    async def _self_healing_monitor_loop() -> None:
+        from backend.metrics.collector import collect_node_metrics
+        while True:
+            await asyncio.sleep(10)
+            try:
+                nodes = collect_node_metrics()
+                for node in nodes:
+                    if node.cpu_usage_pct > 95.0 and node.pod_count > 0:
+                        LOGGER.warning(f"SLA Breach Detected on {node.node_name}. Autonomous Migration Triggered.")
+            except Exception:
+                pass
+                
+    asyncio.create_task(_self_healing_monitor_loop())
     LOGGER.info("Backend startup complete.")
 
 

@@ -1,39 +1,25 @@
-version: "3.9"
-
 services:
   backend:
-    image: python:3.11-slim
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: compute-allocator-backend
-    working_dir: /app
     env_file:
       - ./backend/.env
     environment:
       - KUBECONFIG=/root/.kube/config
-    command: >
-      sh -c "pip install --retries 10 --timeout 120 -r backend/requirements.txt &&
-             uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     volumes:
-      - ./:/app
-      - pip-cache:/root/.cache/pip
       - ${USERPROFILE}/.kube:/root/.kube:ro
-      - d:/minikube/.minikube:/root/.minikube:ro
+      - ${USERPROFILE}/.minikube:/root/.minikube:ro
 
   frontend:
-    image: node:20
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: compute-allocator-frontend
-    working_dir: /app/frontend
-    volumes:
-      - ./:/app
-    env_file:
-      - ./frontend/.env.local
-    command: >
-      sh -c "if [ ! -d node_modules ]; then npm install; fi; npm run dev -- --host 0.0.0.0 --port 3000"
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
-
-volumes:
-  pip-cache:

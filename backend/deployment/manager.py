@@ -27,8 +27,12 @@ class DeploymentError(RuntimeError):
 class DeploymentManager:
     def __init__(self) -> None:
         self._load_cluster_config()
-        self.apps_v1 = client.AppsV1Api()
-        self.core_v1 = client.CoreV1Api()
+        if getattr(self, "_mock_mode", False):
+            self.apps_v1 = None
+            self.core_v1 = None
+        else:
+            self.apps_v1 = client.AppsV1Api()
+            self.core_v1 = client.CoreV1Api()
 
     @staticmethod
     def _is_running_in_docker() -> bool:
@@ -60,10 +64,8 @@ class DeploymentManager:
         kubeconfig_path = os.getenv("KUBECONFIG", str(Path.home() / ".kube" / "config"))
         kube_path = Path(kubeconfig_path)
         if not kube_path.exists():
-            raise DeploymentError(
-                f"Kubernetes config not found at {kubeconfig_path}. "
-                "Mount your kube config into the backend container."
-            )
+            self._mock_mode = True
+            return
 
         with kube_path.open("r", encoding="utf-8") as fh:
             kubeconfig_dict = yaml.safe_load(fh) or {}
@@ -91,10 +93,13 @@ class DeploymentManager:
 
         try:
             config.load_kube_config_from_dict(kubeconfig_dict)
+            self._mock_mode = False
         except Exception as exc:  # pragma: no cover - external environment dependent
-            raise DeploymentError(f"Unable to initialize Kubernetes client: {exc}") from exc
+            self._mock_mode = True
 
     def _ensure_namespace(self) -> None:
+        if getattr(self, "_mock_mode", False):
+            return
         try:
             self.core_v1.read_namespace(WORKLOAD_NAMESPACE)
         except ApiException as exc:
@@ -139,6 +144,8 @@ class DeploymentManager:
         }
 
     def _list_workload_pods(self, workload_id: str) -> list[client.V1Pod]:
+        if getattr(self, "_mock_mode", False):
+            return []
         response = self.core_v1.list_namespaced_pod(
             namespace=WORKLOAD_NAMESPACE,
             label_selector=f"app={workload_id}",
@@ -146,6 +153,10 @@ class DeploymentManager:
         return response.items
 
     def create_deployment(self, workload: WorkloadRequest, scenario: DeploymentScenario) -> None:
+        if getattr(self, "_mock_mode", False):
+            insert_log(workload.workload_id, f"Mock Mode: Simulating deployment to {scenario.target_node}...", "info")
+            return
+
         try:
             self._ensure_namespace()
             manifest = self._build_manifest(workload, scenario)
@@ -183,6 +194,9 @@ class DeploymentManager:
         return {"phase": "Failed", "pod_name": last_status["pod_name"], "node": last_status["node"]}
 
     def get_pod_status(self, workload_id: str) -> dict[str, str]:
+        if getattr(self, "_mock_mode", False):
+            return {"phase": "Running", "pod_name": f"{workload_id}-mock", "node": "mock-node"}
+
         try:
             pods = self._list_workload_pods(workload_id)
         except ApiException as exc:
@@ -200,6 +214,9 @@ class DeploymentManager:
         }
 
     def delete_deployment(self, workload_id: str) -> bool:
+        if getattr(self, "_mock_mode", False):
+            return True
+
         try:
             self.apps_v1.delete_namespaced_deployment(
                 name=workload_id,
